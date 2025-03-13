@@ -1,15 +1,18 @@
 
 type var = string 
 
-type oper = ADD | MUL | DIV | SUB 
+type oper = ADD | MUL | DIV | SUB | GTEQ | ASSIGN
 
-type unary_oper = NEG
+type unary_oper = NEG | DEREF
 
 type expr = 
        | Integer of int
        | UnaryOp of unary_oper * expr
        | Op of expr * oper * expr
        | Seq of (expr list)
+        | If_then_else of expr * expr * expr
+        | While of expr * expr
+        | Var of var
 
 and lambda = var * expr 
 
@@ -24,6 +27,8 @@ open Format
 
 let pp_uop = function 
   | NEG -> "-" 
+  | DEREF -> "!"
+
 
 
 let pp_bop = function 
@@ -31,6 +36,8 @@ let pp_bop = function
   | MUL  -> "*" 
   | DIV  -> "/" 
   | SUB -> "-" 
+  | GTEQ -> ">="
+  | ASSIGN -> ":="
 
 
 let string_of_oper = pp_bop 
@@ -48,6 +55,9 @@ let rec pp_expr ppf = function
     | Op(e1, op, e2)   -> fprintf ppf "(%a %a %a)" pp_expr e1  pp_binary op pp_expr e2 
 
     | Seq el           -> fprintf ppf "begin %a end" pp_expr_list el 
+    | If_then_else(e1, e2, e3) -> fprintf ppf "if %a then %a else %a" pp_expr e1 pp_expr e2 pp_expr e3
+    | While(e1, e2) -> fprintf ppf "while %a do %a" pp_expr e1 pp_expr e2
+    | Var x -> fstring ppf x
 	
 and pp_expr_list ppf = function 
   | [] -> () 
@@ -67,12 +77,15 @@ let eprint_expr e =
 
 let string_of_uop = function 
   | NEG -> "NEG" 
+  | DEREF -> "DEREF"
 
 let string_of_bop = function 
   | ADD -> "ADD" 
   | MUL  -> "MUL" 
   | DIV  -> "DIV" 
   | SUB -> "SUB" 
+  | GTEQ -> "GTEQ"
+  | ASSIGN -> "ASSIGN"
 
 let mk_con con l = 
     let rec aux carry = function 
@@ -86,6 +99,9 @@ let rec string_of_expr = function
     | UnaryOp(op, e)   -> mk_con "UnaryOp" [string_of_uop op; string_of_expr e]
     | Op(e1, op, e2)   -> mk_con "Op" [string_of_expr e1; string_of_bop op; string_of_expr e2]
     | Seq el           -> mk_con "Seq" [string_of_expr_list el] 
+    | If_then_else(e1, e2, e3) -> mk_con "If_then_else" [string_of_expr e1; string_of_expr e2; string_of_expr e3]
+    | While(e1, e2) -> mk_con "While" [string_of_expr e1; string_of_expr e2]
+    | Var x -> mk_con "Var" [x]
 
 and string_of_expr_list = function 
   | [] -> "" 

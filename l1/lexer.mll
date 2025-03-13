@@ -20,15 +20,27 @@ let int_reg_exp = ['0'-'9']+
 	rule token = parse
 	  | [' ' '\t']     { token lexbuf }     (* skip blanks *)
 	  | '+'            { ADD }
+	  | ">="           { GTEQ }
+	  | "skip"         { SKIP }
 	  | '-'            { SUB }
+	  | ":="           { ASSIGN }
 	  | '*'            { MUL }
 	  | '/'            { DIV }
 	  | '('            { LPAREN }
+	  | '!'            { DEREF }
 	  | ')'            { RPAREN }
 	  | ';'	           { SEMICOLON }
 	  | "begin"        { BEGIN }
 	  | "end"          { END }
+	  | "true"         { TRUE }
+	  | "false"        { FALSE }
+	  | "if"           { IF }
+	  | "then"         { THEN }
+	  | "else"         { ELSE }
+	  | "while"        { WHILE }
+	  | "do"           { DO }
 	  | eof            { EOF }  
+	  | ident_reg_exp { ID (Lexing.lexeme lexbuf) } 
 	  | int_reg_exp { INT (int_of_string (Lexing.lexeme lexbuf)) }
 	  | "(*" { comment lexbuf; token lexbuf }
 	  | newline { next_line lexbuf; token lexbuf } 

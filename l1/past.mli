@@ -14,15 +14,18 @@ type type_expr =
    | TEproduct of type_expr * type_expr
    | TEunion of type_expr * type_expr
 
-type oper = ADD | MUL | DIV | SUB
+type oper = ADD | MUL | DIV | SUB | GTEQ | ASSIGN
 
-type unary_oper = NEG 
+type unary_oper = NEG | DEREF
 
 type expr = 
        | Integer of loc * int
        | UnaryOp of loc * unary_oper * expr
        | Op of loc * expr * oper * expr
 	   | Seq of loc * (expr list)
+         | If_then_else of loc * expr * expr * expr
+         | While of loc * expr * expr
+         | Var of loc * var
 
 val loc_of_expr : expr -> loc 
 val string_of_loc : loc -> string 

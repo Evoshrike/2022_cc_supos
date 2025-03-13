@@ -18,15 +18,18 @@ type type_expr =
 
 type formals = (var * type_expr) list
 
-type oper = ADD | MUL | DIV | SUB 
+type oper = ADD | MUL | DIV | SUB | GTEQ | ASSIGN
 
-type unary_oper = NEG 
+type unary_oper = NEG | DEREF
 
 type expr = 
        | Integer of loc * int
        | UnaryOp of loc * unary_oper * expr
        | Op of loc * expr * oper * expr
        | Seq of loc * (expr list)
+       | If_then_else of loc * expr * expr * expr
+       | While of loc * expr * expr
+       | Var of loc * var
 
 
 and lambda = var * type_expr * expr 
@@ -35,8 +38,10 @@ let  loc_of_expr = function
     | Integer (loc, _)              -> loc 
     | UnaryOp(loc, _, _)            -> loc 
     | Op(loc, _, _, _)              -> loc 
-	| Seq(loc, _)                   -> loc
-
+	  | Seq(loc, _)                   -> loc
+    | If_then_else(loc, _, _, _)    -> loc 
+    | While(loc, _, _)              -> loc 
+    | Var(loc, _)                   -> loc
 
 let string_of_loc loc = 
     "line " ^ (string_of_int (loc.Lexing.pos_lnum)) ^ ", " ^ 
@@ -61,12 +66,15 @@ let rec pp_type = function
 
 let pp_uop = function 
   | NEG -> "-" 
+  | DEREF -> "!"
 
 let pp_bop = function 
   | ADD -> "+" 
   | MUL  -> "*" 
   | DIV  -> "/" 
   | SUB -> "-" 
+  | GTEQ -> ">="
+  | ASSIGN -> ":="
 
 let string_of_oper = pp_bop 
 let string_of_unary_oper = pp_uop 
@@ -84,6 +92,9 @@ let rec pp_expr ppf = function
     | Seq (_, [])         -> () 
     | Seq (_, [e])        -> pp_expr ppf e 
     | Seq (l, e :: rest)  -> fprintf ppf "%a; %a" pp_expr e pp_expr (Seq(l, rest))	
+    | If_then_else(_, e1, e2, e3) -> fprintf ppf "if %a then %a else %a" pp_expr e1 pp_expr e2 pp_expr e3
+    | While(_, e1, e2) -> fprintf ppf "while %a do %a" pp_expr e1 pp_expr e2
+    | Var(_, x) -> fstring ppf x
 
 let print_expr e = 
     let _ = pp_expr std_formatter e
@@ -98,12 +109,15 @@ let eprint_expr e =
 
 let string_of_uop = function 
   | NEG -> "NEG" 
+  | DEREF -> "DEREF"
 
 let string_of_bop = function 
   | ADD -> "ADD" 
   | MUL  -> "MUL" 
   | DIV  -> "DIV" 
   | SUB -> "SUB"
+  | GTEQ -> "GTEQ"
+  | ASSIGN -> "ASSIGN"
 
 let mk_con con l = 
     let rec aux carry = function 
@@ -126,6 +140,9 @@ let rec string_of_expr = function
     | UnaryOp(_, op, e)   -> mk_con "UnaryOp" [string_of_uop op; string_of_expr e]
     | Op(_, e1, op, e2)   -> mk_con "Op" [string_of_expr e1; string_of_bop op; string_of_expr e2]
     | Seq (_, el)         -> mk_con "Seq" [string_of_expr_list el]
+    | If_then_else(_, e1, e2, e3) -> mk_con "If_then_else" [string_of_expr e1; string_of_expr e2; string_of_expr e3]
+    | While(_, e1, e2) -> mk_con "While" [string_of_expr e1; string_of_expr e2]
+    | Var(_, x) -> mk_con "Var" [x]
 
 
 and string_of_expr_list = function 

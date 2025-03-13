@@ -1,0 +1,4 @@
+(executable
+ (public_name SLANG_COMPILER)
+ (name main)
+ (libraries SLANG_COMPILER))

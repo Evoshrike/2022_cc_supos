@@ -40,6 +40,7 @@ let rec string_of_value = function
    update : (store * (address * value)) -> store
 *) 
 let update(env, (x, v)) = fun y -> if x = y then v else env y
+let lookup(env, x) = env x
 
 let readint () = let _ = print_string "input> " in read_int() 
 
@@ -66,6 +67,7 @@ let rec interpret (e, env, store) =
     | Seq [e]          -> interpret (e, env, store)
     | Seq (e :: rest)  -> let (_,  store1) = interpret(e, env, store) 
                           in interpret(Seq rest, env, store1) 
+    |
 
 (* env_empty : env *) 
 let empty_env = fun x -> complain (x ^ " is not defined!\n")

@@ -14,6 +14,9 @@ let free_vars(bvars, exp) =
     | Op(e1, _, e2)      -> aux bound (aux bound free e1) e2
     | Seq []             -> free 
     | Seq (e :: rest)    -> aux bound (aux bound free e) (Seq rest) 
+    | If_then_else(e1, e2, e3) -> aux bound (aux bound (aux bound free e1) e2) e3
+    | While(e1, e2)      -> aux bound (aux bound free e1) e2
+    | Var x              -> if inlist x bound then free else x :: free
     | _                  -> free 
    in aux bvars [] exp 
 

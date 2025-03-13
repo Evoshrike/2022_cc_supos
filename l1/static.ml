@@ -47,6 +47,8 @@ let make_uop loc uop (e, t) =
     match uop, t with 
     | NEG, TEint  -> (UnaryOp(loc, uop, e), t) 
     | NEG, t'     -> report_expecting e "integer" t
+    | DEREF, TEref t' -> (UnaryOp(loc, uop, e), t')
+    | DEREF, t'       -> report_expecting e "reference" t
 
 let make_bop loc bop (e1, t1) (e2, t2) = 
     match bop, t1, t2 with 
@@ -62,6 +64,13 @@ let make_bop loc bop (e1, t1) (e2, t2) =
     | DIV, TEint,  TEint  -> (Op(loc, e1, bop, e2), t1) 
     | DIV, TEint,  t      -> report_expecting e2 "integer" t
     | DIV, t,      _      -> report_expecting e1 "integer" t
+    | GTEQ, TEint, TEint  -> (Op(loc, e1, bop, e2), TEbool)
+    | GTEQ, TEint, t      -> report_expecting e2 "integer" t
+    | GTEQ, t,     _      -> report_expecting e1 "integer" t
+    | ASSIGN, TEint, TEref TEint -> (Op(loc, e1, bop, e2), TEunit)
+    | ASSIGN, TEint, t          -> report_expecting e2 "reference to integer" t
+    | ASSIGN, t,     _          -> report_expecting e1 "integer" t
+
 
 
 let rec  infer env e = 
@@ -70,6 +79,24 @@ let rec  infer env e =
     | UnaryOp(loc, uop, e) -> make_uop loc uop (infer env e) 
     | Op(loc, e1, bop, e2) -> make_bop loc bop (infer env e1) (infer env e2) 
     | Seq(loc, el)         -> infer_seq loc env el 
+    | If_then_else(loc, e1, e2, e3) ->
+        let (e1', t1) = infer env e1 in 
+        let (e2', t2) = infer env e2 in 
+        let (e3', t3) = infer env e3 in 
+        if match_types (t1, TEbool) then 
+          if match_types (t2, t3) then 
+            (If_then_else(loc, e1', e2', e3'), t2)
+          else report_type_mismatch (e2, t2) (e3, t3)
+        else report_expecting e1 "boolean" t1
+    | While(loc, e1, e2) ->
+        let (e1', t1) = infer env e1 in 
+        let (e2', t2) = infer env e2 in 
+        if match_types (t1, TEbool) then
+            if match_types (t2, TEunit) then
+                (While(loc, e1', e2'), TEunit)
+            else report_expecting e2 "unit" t2
+        else report_expecting e1 "boolean" t1
+    | Var(loc, x) -> (e, find loc x env)
 
 and infer_seq loc env el = 
     let rec aux carry = function 
